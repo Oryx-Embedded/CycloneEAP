@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.6
+ * @version 2.6.8
  **/
 
 #ifndef _AUTHENTICATOR_H
@@ -472,7 +472,7 @@ struct _AuthenticatorContext
    AuthenticatorTickCallback tickCallback;              ///<Tick callback function
    systime_t timestamp;                                 ///<Timestamp to manage timeout
 
-   uint_t radiusId;                                     ///<RADIUS packet identifier
+   uint8_t radiusId;                                    ///<RADIUS packet identifier
    bool_t busy;                                         ///<Busy flag
 
    uint8_t txBuffer[AUTHENTICATOR_TX_BUFFER_SIZE];      ///<Transmission buffer

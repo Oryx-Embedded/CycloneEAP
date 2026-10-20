@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.6
+ * @version 2.6.8
  **/
 
 //Switch to the appropriate trace level
@@ -84,11 +84,15 @@ error_t authenticatorMgmtSetInitialize(AuthenticatorContext *context,
 
    //Make sure the 802.1X authenticator context is valid
    if(context == NULL)
+   {
       return ERROR_WRITE_FAILED;
+   }
 
    //Invalid port index?
    if(portIndex < 1 || portIndex > context->numPorts)
+   {
       return ERROR_INVALID_PORT;
+   }
 
    //Point to the port that matches the specified port index
    port = &context->ports[portIndex - 1];
@@ -139,11 +143,15 @@ error_t authenticatorMgmtSetReauthenticate(AuthenticatorContext *context,
 
    //Make sure the 802.1X authenticator context is valid
    if(context == NULL)
+   {
       return ERROR_WRITE_FAILED;
+   }
 
    //Invalid port index?
    if(portIndex < 1 || portIndex > context->numPorts)
+   {
       return ERROR_INVALID_PORT;
+   }
 
    //Point to the port that matches the specified port index
    port = &context->ports[portIndex - 1];
@@ -185,11 +193,15 @@ error_t authenticatorMgmtSetPortControl(AuthenticatorContext *context,
 
    //Make sure the 802.1X authenticator context is valid
    if(context == NULL)
+   {
       return ERROR_WRITE_FAILED;
+   }
 
    //Invalid port index?
    if(portIndex < 1 || portIndex > context->numPorts)
+   {
       return ERROR_INVALID_PORT;
+   }
 
    //Point to the port that matches the specified port index
    port = &context->ports[portIndex - 1];
@@ -227,16 +239,22 @@ error_t authenticatorMgmtSetQuietPeriod(AuthenticatorContext *context,
 
    //Make sure the 802.1X authenticator context is valid
    if(context == NULL)
+   {
       return ERROR_WRITE_FAILED;
+   }
 
    //Invalid port index?
    if(portIndex < 1 || portIndex > context->numPorts)
+   {
       return ERROR_INVALID_PORT;
+   }
 
    //The quietPeriod parameter can be set by management to any value in the
    //range from 0 to 65535 s (refer to IEEE Std 802.1X-2004, section 8.2.4.1.2)
    if(quietPeriod > AUTHENTICATOR_MAX_QUIET_PERIOD)
+   {
       return ERROR_WRONG_VALUE;
+   }
 
    //Point to the port that matches the specified port index
    port = &context->ports[portIndex - 1];
@@ -282,11 +300,15 @@ error_t authenticatorMgmtSetServerTimeout(AuthenticatorContext *context,
 
    //Make sure the 802.1X authenticator context is valid
    if(context == NULL)
+   {
       return ERROR_WRITE_FAILED;
+   }
 
    //Invalid port index?
    if(portIndex < 1 || portIndex > context->numPorts)
+   {
       return ERROR_INVALID_PORT;
+   }
 
    //The serverTimeout parameter can be set by management to any value in the
    //range from 1 to X s, where X is an implementation dependent value (refer
@@ -341,11 +363,15 @@ error_t authenticatorMgmtSetReAuthPeriod(AuthenticatorContext *context,
 
    //Make sure the 802.1X authenticator context is valid
    if(context == NULL)
+   {
       return ERROR_WRITE_FAILED;
+   }
 
    //Invalid port index?
    if(portIndex < 1 || portIndex > context->numPorts)
+   {
       return ERROR_INVALID_PORT;
+   }
 
    //If the value of the reAuthPeriod parameter is outside the specified range,
    //then no action shall be taken
@@ -399,11 +425,15 @@ error_t authenticatorMgmtSetReAuthEnabled(AuthenticatorContext *context,
 
    //Make sure the 802.1X authenticator context is valid
    if(context == NULL)
+   {
       return ERROR_WRITE_FAILED;
+   }
 
    //Invalid port index?
    if(portIndex < 1 || portIndex > context->numPorts)
+   {
       return ERROR_INVALID_PORT;
+   }
 
    //Point to the port that matches the specified port index
    port = &context->ports[portIndex - 1];
@@ -441,11 +471,15 @@ error_t authenticatorMgmtSetKeyTxEnabled(AuthenticatorContext *context,
 
    //Make sure the 802.1X authenticator context is valid
    if(context == NULL)
+   {
       return ERROR_WRITE_FAILED;
+   }
 
    //Invalid port index?
    if(portIndex < 1 || portIndex > context->numPorts)
+   {
       return ERROR_INVALID_PORT;
+   }
 
    //Point to the port that matches the specified port index
    port = &context->ports[portIndex - 1];

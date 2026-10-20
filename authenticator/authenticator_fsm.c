@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.6
+ * @version 2.6.8
  **/
 
 //Switch to the appropriate trace level
@@ -179,6 +179,7 @@ void authenticatorInitPortFsm(AuthenticatorPort *port)
 
 void authenticatorFsm(AuthenticatorContext *context)
 {
+   error_t error;
    uint_t i;
    AuthenticatorPort *port;
 
@@ -211,13 +212,26 @@ void authenticatorFsm(AuthenticatorContext *context)
             //Any EAP response available for processing by the AAA server?
             if(port->aaaEapResp)
             {
-               //Forward the EAP response to the AAA server
-               authenticatorBuildRadiusRequest(port);
-               authenticatorSendRadiusRequest(port);
+               //Encapsulate the EAP response in a RADIUS Access-Request packet
+               error = authenticatorBuildRadiusRequest(port);
 
-               //Clear flags
+               //Check status code
+               if(!error)
+               {
+                  //Send the RADIUS Access-Request packet
+                  authenticatorSendRadiusRequest(port);
+                  //A response from the AAA server is now awaited
+                  port->aaaTimeout = FALSE;
+               }
+               else
+               {
+                  //The AAA layer is unable to process the EAP response
+                  port->aaaTimeout = TRUE;
+                  context->busy = TRUE;
+               }
+
+               //The EAP response has been processed by the AAA layer
                port->aaaEapResp = FALSE;
-               port->aaaTimeout = FALSE;
             }
             else if(port->aaaRetransTimer == 0)
             {

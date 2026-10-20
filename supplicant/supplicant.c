@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.6
+ * @version 2.6.8
  **/
 
 //Switch to the appropriate trace level
@@ -58,6 +58,12 @@ void supplicantGetDefaultSettings(SupplicantSettings *settings)
    settings->interface = NULL;
    //Port index
    settings->portIndex = 0;
+
+#if (EAP_MSCHAPV2_SUPPORT == ENABLED)
+   //Pseudo-random number generator
+   settings->prngAlgo = NULL;
+   settings->prngContext = NULL;
+#endif
 
 #if (EAP_TLS_SUPPORT == ENABLED)
    //TLS negotiation initialization callback function
@@ -94,7 +100,9 @@ error_t supplicantInit(SupplicantContext *context,
 
    //Ensure the parameters are valid
    if(context == NULL || settings == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Clear supplicant context
    osMemset(context, 0, sizeof(SupplicantContext));
@@ -120,6 +128,18 @@ error_t supplicantInit(SupplicantContext *context,
    context->backendStateChangeCallback = settings->backendStateChangeCallback;
    context->eapPeerStateChangeCallback = settings->eapPeerStateChangeCallback;
    context->tickCallback = settings->tickCallback;
+
+#if (EAP_MSCHAPV2_SUPPORT == ENABLED)
+   //Verify that the PRNG is properly set
+   if(settings->prngAlgo == NULL || settings->prngContext == NULL)
+   {
+      return ERROR_INVALID_PARAMETER;
+   }
+
+   //Pseudo-random number generator
+   context->prngAlgo = settings->prngAlgo;
+   context->prngContext = settings->prngContext;
+#endif
 
 #if (EAP_TLS_SUPPORT == ENABLED)
    //TLS negotiation initialization callback function
@@ -160,6 +180,16 @@ error_t supplicantInit(SupplicantContext *context,
          break;
       }
 
+#if (EAP_TLS_SUPPORT == ENABLED)
+      //Initialize TLS session state
+      error = tlsInitSessionState(&context->tlsSession);
+      //Any error to report?
+      if(error)
+      {
+         break;
+      }
+#endif
+
       //Successful initialization
       error = NO_ERROR;
 
@@ -190,14 +220,22 @@ error_t supplicantSetUsername(SupplicantContext *context,
 {
    //Check parameters
    if(context == NULL || username == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Make sure the length of the user name is acceptable
    if(osStrlen(username) > SUPPLICANT_MAX_USERNAME_LEN)
+   {
       return ERROR_INVALID_LENGTH;
+   }
 
+   //Acquire exclusive access to the 802.1X supplicant context
+   osAcquireMutex(&context->mutex);
    //Save user name
    osStrcpy(context->username, username);
+   //Release exclusive access to the 802.1X supplicant context
+   osReleaseMutex(&context->mutex);
 
    //Successful processing
    return NO_ERROR;
@@ -214,22 +252,34 @@ error_t supplicantSetUsername(SupplicantContext *context,
 error_t supplicantSetPassword(SupplicantContext *context,
    const char_t *password)
 {
-#if (EAP_MD5_SUPPORT == ENABLED)
+#if (EAP_MD5_SUPPORT == ENABLED || EAP_MSCHAPV2_SUPPORT == ENABLED)
    //Check parameters
    if(context == NULL || password == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Make sure the length of the password is acceptable
    if(osStrlen(password) > SUPPLICANT_MAX_PASSWORD_LEN)
+   {
       return ERROR_INVALID_LENGTH;
+   }
 
-   //Save password
+   //Acquire exclusive access to the 802.1X supplicant context
+   osAcquireMutex(&context->mutex);
+
+   //Erase the existing password, if any
+   cryptoZeroizeMem(context->password, SUPPLICANT_MAX_PASSWORD_LEN);
+   //Save the new password
    osStrcpy(context->password, password);
+
+   //Release exclusive access to the 802.1X supplicant context
+   osReleaseMutex(&context->mutex);
 
    //Successful processing
    return NO_ERROR;
 #else
-   //EAP-MD5 challenge is not implemented
+   //Not implemented
    return ERROR_NOT_IMPLEMENTED;
 #endif
 }
@@ -246,7 +296,9 @@ error_t supplicantSetHeldPeriod(SupplicantContext *context, uint_t heldPeriod)
 {
    //Check parameters
    if(context == NULL || heldPeriod == 0)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Acquire exclusive access to the 802.1X supplicant context
    osAcquireMutex(&context->mutex);
@@ -271,7 +323,9 @@ error_t supplicantSetAuthPeriod(SupplicantContext *context, uint_t authPeriod)
 {
    //Check parameters
    if(context == NULL || authPeriod == 0)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Acquire exclusive access to the 802.1X supplicant context
    osAcquireMutex(&context->mutex);
@@ -296,7 +350,9 @@ error_t supplicantSetStartPeriod(SupplicantContext *context, uint_t startPeriod)
 {
    //Check parameters
    if(context == NULL || startPeriod == 0)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Acquire exclusive access to the 802.1X supplicant context
    osAcquireMutex(&context->mutex);
@@ -321,7 +377,9 @@ error_t supplicantSetMaxStart(SupplicantContext *context, uint_t maxStart)
 {
    //Check parameters
    if(context == NULL || maxStart == 0)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Acquire exclusive access to the 802.1X supplicant context
    osAcquireMutex(&context->mutex);
@@ -355,7 +413,9 @@ error_t supplicantSetClientTimeout(SupplicantContext *context,
 {
    //Check parameters
    if(context == NULL || clientTimeout == 0)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Acquire exclusive access to the 802.1X supplicant context
    osAcquireMutex(&context->mutex);
@@ -381,7 +441,9 @@ error_t supplicantSetPortControl(SupplicantContext *context,
 {
    //Make sure the 802.1X supplicant context is valid
    if(context == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Acquire exclusive access to the 802.1X supplicant context
    osAcquireMutex(&context->mutex);
@@ -414,7 +476,9 @@ error_t supplicantLogOn(SupplicantContext *context)
 {
    //Make sure the 802.1X supplicant context is valid
    if(context == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Acquire exclusive access to the 802.1X supplicant context
    osAcquireMutex(&context->mutex);
@@ -448,7 +512,9 @@ error_t supplicantLogOff(SupplicantContext *context)
 {
    //Make sure the 802.1X supplicant context is valid
    if(context == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Acquire exclusive access to the 802.1X supplicant context
    osAcquireMutex(&context->mutex);
@@ -484,14 +550,18 @@ error_t supplicantStart(SupplicantContext *context)
 
    //Make sure the supplicant context is valid
    if(context == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Debug message
    TRACE_INFO("Starting 802.1X supplicant...\r\n");
 
    //Make sure the supplicant is not already running
    if(context->running)
+   {
       return ERROR_ALREADY_RUNNING;
+   }
 
    //Start of exception handling block
    do
@@ -502,7 +572,6 @@ error_t supplicantStart(SupplicantContext *context)
       //Failed to open socket?
       if(context->socket == NULL)
       {
-         //Report an error
          error = ERROR_OPEN_FAILED;
          break;
       }
@@ -511,13 +580,17 @@ error_t supplicantStart(SupplicantContext *context)
       error = socketSetTimeout(context->socket, 0);
       //Any error to report?
       if(error)
+      {
          break;
+      }
 
       //Associate the socket with the relevant interface
       error = socketBindToInterface(context->socket, context->interface);
       //Any error to report?
       if(error)
+      {
          break;
+      }
 
       //The PAE group address is one of the reserved set of group MAC addresses
       //that are not forwarded by MAC Bridges (refer to IEEE Std 802.1X-2010,
@@ -525,7 +598,9 @@ error_t supplicantStart(SupplicantContext *context)
       error = supplicantAcceptPaeGroupAddr(context);
       //Any error to report?
       if(error)
+      {
          break;
+      }
 
       //Start the supplicant
       context->stop = FALSE;
@@ -544,7 +619,6 @@ error_t supplicantStart(SupplicantContext *context)
       //Failed to create task?
       if(context->taskId == OS_INVALID_TASK_ID)
       {
-         //Report an error
          error = ERROR_OUT_OF_RESOURCES;
          break;
       }
@@ -581,7 +655,9 @@ error_t supplicantStop(SupplicantContext *context)
 {
    //Make sure the supplicant context is valid
    if(context == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Debug message
    TRACE_INFO("Stopping 802.1X supplicant...\r\n");
@@ -719,8 +795,13 @@ void supplicantDeinit(SupplicantContext *context)
       osDeleteMutex(&context->mutex);
       osDeleteEvent(&context->event);
 
+#if (EAP_TLS_SUPPORT == ENABLED)
+      //Release TLS session state
+      tlsFreeSessionState(&context->tlsSession);
+#endif
+
       //Clear supplicant context
-      osMemset(context, 0, sizeof(SupplicantContext));
+      cryptoZeroizeMem(context, sizeof(SupplicantContext));
    }
 }
 

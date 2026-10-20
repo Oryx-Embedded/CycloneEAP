@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.6
+ * @version 2.6.8
  **/
 
 //Switch to the appropriate trace level
@@ -109,16 +109,24 @@ error_t authenticatorInit(AuthenticatorContext *context,
 
    //Ensure the parameters are valid
    if(context == NULL || settings == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    if(settings->interface == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    if(settings->numPorts == 0 || settings->ports == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    if(settings->prngAlgo == NULL || settings->prngContext == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Clear authenticator context
    osMemset(context, 0, sizeof(AuthenticatorContext));
@@ -241,7 +249,9 @@ error_t authenticatorSetServerAddr(AuthenticatorContext *context,
 {
    //Check parameters
    if(context == NULL || serverIpAddr == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Acquire exclusive access to the 802.1X authenticator context
    osAcquireMutex(&context->mutex);
@@ -271,20 +281,28 @@ error_t authenticatorSetServerKey(AuthenticatorContext *context,
 {
    //Make sure the 802.1X authenticator context is valid
    if(context == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Check parameters
    if(key == NULL && keyLen != 0)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Check the length of the key
    if(keyLen > AUTHENTICATOR_MAX_SERVER_KEY_LEN)
+   {
       return ERROR_INVALID_LENGTH;
+   }
 
    //Acquire exclusive access to the 802.1X authenticator context
    osAcquireMutex(&context->mutex);
 
-   //Copy key
+   //Erase the existing key, if any
+   cryptoZeroizeMem(context->serverKey, AUTHENTICATOR_MAX_SERVER_KEY_LEN);
+   //Copy the new key
    osMemcpy(context->serverKey, key, keyLen);
    //Save the length of the key
    context->serverKeyLen = keyLen;
@@ -567,11 +585,15 @@ error_t authenticatorGetPortControl(AuthenticatorContext *context,
 {
    //Check parameters
    if(context == NULL || portControl == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Invalid port index?
    if(portIndex < 1 || portIndex > context->numPorts)
+   {
       return ERROR_INVALID_PORT;
+   }
 
    //Acquire exclusive access to the 802.1X authenticator context
    osAcquireMutex(&context->mutex);
@@ -598,11 +620,15 @@ error_t authenticatorGetQuietPeriod(AuthenticatorContext *context,
 {
    //Check parameters
    if(context == NULL || quietPeriod == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Invalid port index?
    if(portIndex < 1 || portIndex > context->numPorts)
+   {
       return ERROR_INVALID_PORT;
+   }
 
    //Acquire exclusive access to the 802.1X authenticator context
    osAcquireMutex(&context->mutex);
@@ -629,11 +655,15 @@ error_t authenticatorGetServerTimeout(AuthenticatorContext *context,
 {
    //Check parameters
    if(context == NULL || serverTimeout == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Invalid port index?
    if(portIndex < 1 || portIndex > context->numPorts)
+   {
       return ERROR_INVALID_PORT;
+   }
 
    //Acquire exclusive access to the 802.1X authenticator context
    osAcquireMutex(&context->mutex);
@@ -660,11 +690,15 @@ error_t authenticatorGetReAuthEnabled(AuthenticatorContext *context,
 {
    //Check parameters
    if(context == NULL || reAuthEnabled == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Invalid port index?
    if(portIndex < 1 || portIndex > context->numPorts)
+   {
       return ERROR_INVALID_PORT;
+   }
 
    //Acquire exclusive access to the 802.1X authenticator context
    osAcquireMutex(&context->mutex);
@@ -691,11 +725,15 @@ error_t authenticatorGetReAuthPeriod(AuthenticatorContext *context,
 {
    //Check parameters
    if(context == NULL || reAuthPeriod == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Invalid port index?
    if(portIndex < 1 || portIndex > context->numPorts)
+   {
       return ERROR_INVALID_PORT;
+   }
 
    //Acquire exclusive access to the 802.1X authenticator context
    osAcquireMutex(&context->mutex);
@@ -722,11 +760,15 @@ error_t authenticatorGetPortStatus(AuthenticatorContext *context,
 {
    //Check parameters
    if(context == NULL || portStatus == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Invalid port index?
    if(portIndex < 1 || portIndex > context->numPorts)
+   {
       return ERROR_INVALID_PORT;
+   }
 
    //Acquire exclusive access to the 802.1X authenticator context
    osAcquireMutex(&context->mutex);
@@ -753,11 +795,15 @@ error_t authenticatorGetPaeState(AuthenticatorContext *context,
 {
    //Check parameters
    if(context == NULL || paeState == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Invalid port index?
    if(portIndex < 1 || portIndex > context->numPorts)
+   {
       return ERROR_INVALID_PORT;
+   }
 
    //Acquire exclusive access to the 802.1X authenticator context
    osAcquireMutex(&context->mutex);
@@ -785,11 +831,15 @@ error_t authenticatorGetBackendState(AuthenticatorContext *context,
 {
    //Check parameters
    if(context == NULL || backendState == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Invalid port index?
    if(portIndex < 1 || portIndex > context->numPorts)
+   {
       return ERROR_INVALID_PORT;
+   }
 
    //Acquire exclusive access to the 802.1X authenticator context
    osAcquireMutex(&context->mutex);
@@ -817,11 +867,15 @@ error_t authenticatorGetReauthTimerState(AuthenticatorContext *context,
 {
    //Check parameters
    if(context == NULL || reauthTimerState == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Invalid port index?
    if(portIndex < 1 || portIndex > context->numPorts)
+   {
       return ERROR_INVALID_PORT;
+   }
 
    //Acquire exclusive access to the 802.1X authenticator context
    osAcquireMutex(&context->mutex);
@@ -849,11 +903,15 @@ error_t authenticatorGetEapFullAuthState(AuthenticatorContext *context,
 {
    //Check parameters
    if(context == NULL || eapFullAuthState == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Invalid port index?
    if(portIndex < 1 || portIndex > context->numPorts)
+   {
       return ERROR_INVALID_PORT;
+   }
 
    //Acquire exclusive access to the 802.1X authenticator context
    osAcquireMutex(&context->mutex);
@@ -879,14 +937,18 @@ error_t authenticatorStart(AuthenticatorContext *context)
 
    //Make sure the 802.1X authenticator context is valid
    if(context == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Debug message
    TRACE_INFO("Starting 802.1X authenticator...\r\n");
 
    //Make sure the authenticator is not already running
    if(context->running)
+   {
       return ERROR_ALREADY_RUNNING;
+   }
 
    //Start of exception handling block
    do
@@ -897,7 +959,6 @@ error_t authenticatorStart(AuthenticatorContext *context)
       //Failed to open socket?
       if(context->serverSocket == NULL)
       {
-         //Report an error
          error = ERROR_OPEN_FAILED;
          break;
       }
@@ -906,14 +967,18 @@ error_t authenticatorStart(AuthenticatorContext *context)
       error = socketSetTimeout(context->serverSocket, 0);
       //Any error to report?
       if(error)
+      {
          break;
+      }
 
       //Associate the socket with the relevant interface
       error = socketBindToInterface(context->serverSocket,
          context->serverInterface);
       //Any error to report?
       if(error)
+      {
          break;
+      }
 
       //Open a raw socket
       context->peerSocket = socketOpenEx(context->netContext,
@@ -921,7 +986,6 @@ error_t authenticatorStart(AuthenticatorContext *context)
       //Failed to open socket?
       if(context->peerSocket == NULL)
       {
-         //Report an error
          error = ERROR_OPEN_FAILED;
          break;
       }
@@ -930,13 +994,17 @@ error_t authenticatorStart(AuthenticatorContext *context)
       error = socketSetTimeout(context->peerSocket, 0);
       //Any error to report?
       if(error)
+      {
          break;
+      }
 
       //Associate the socket with the relevant interface
       error = socketBindToInterface(context->peerSocket, context->interface);
       //Any error to report?
       if(error)
+      {
          break;
+      }
 
       //The PAE group address is one of the reserved set of group MAC addresses
       //that are not forwarded by MAC Bridges (refer to IEEE Std 802.1X-2010,
@@ -944,7 +1012,9 @@ error_t authenticatorStart(AuthenticatorContext *context)
       error = authenticatorAcceptPaeGroupAddr(context);
       //Any error to report?
       if(error)
+      {
          break;
+      }
 
       //Start the authenticator
       context->stop = FALSE;
@@ -963,7 +1033,6 @@ error_t authenticatorStart(AuthenticatorContext *context)
       //Failed to create task?
       if(context->taskId == OS_INVALID_TASK_ID)
       {
-         //Report an error
          error = ERROR_OUT_OF_RESOURCES;
          break;
       }
@@ -1010,7 +1079,9 @@ error_t authenticatorStop(AuthenticatorContext *context)
 {
    //Make sure the 802.1X authenticator context is valid
    if(context == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Debug message
    TRACE_INFO("Stopping 802.1X authenticator...\r\n");
@@ -1162,7 +1233,7 @@ void authenticatorDeinit(AuthenticatorContext *context)
       osDeleteEvent(&context->event);
 
       //Clear authenticator context
-      osMemset(context, 0, sizeof(AuthenticatorContext));
+      cryptoZeroizeMem(context, sizeof(AuthenticatorContext));
    }
 }
 

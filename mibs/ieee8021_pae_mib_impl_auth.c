@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.6
+ * @version 2.6.8
  **/
 
 //Switch to the appropriate trace level
@@ -61,6 +61,7 @@
 error_t ieee8021PaeMibSetDot1xAuthConfigEntry(const MibObject *object, const uint8_t *oid,
    size_t oidLen, const MibVariant *value, size_t valueLen, bool_t commit)
 {
+#if (IEEE8021_PAE_MIB_SET_SUPPORT == ENABLED)
    error_t error;
    size_t n;
    uint_t dot1xPaePortNumber;
@@ -72,11 +73,15 @@ error_t ieee8021PaeMibSetDot1xAuthConfigEntry(const MibObject *object, const uin
    error = mibDecodeIndex(oid, oidLen, &n, &dot1xPaePortNumber);
    //Invalid instance identifier?
    if(error)
+   {
       return error;
+   }
 
    //Sanity check
    if(n != oidLen)
+   {
       return ERROR_INSTANCE_NOT_FOUND;
+   }
 
    //dot1xAuthAdminControlledDirections object?
    if(osStrcmp(object->name, "dot1xAuthAdminControlledDirections") == 0)
@@ -205,6 +210,10 @@ error_t ieee8021PaeMibSetDot1xAuthConfigEntry(const MibObject *object, const uin
 
    //Return status code
    return error;
+#else
+   //SET operation is not supported
+   return ERROR_WRITE_FAILED;
+#endif
 }
 
 
@@ -234,21 +243,29 @@ error_t ieee8021PaeMibGetDot1xAuthConfigEntry(const MibObject *object, const uin
    error = mibDecodeIndex(oid, oidLen, &n, &dot1xPaePortNumber);
    //Invalid instance identifier?
    if(error)
+   {
       return error;
+   }
 
    //Sanity check
    if(n != oidLen)
+   {
       return ERROR_INSTANCE_NOT_FOUND;
+   }
 
    //Point to the 802.1X authenticator context
    context = (AuthenticatorContext *) ieee8021PaeMibBase.authContext;
    //Sanity check
    if(context == NULL)
+   {
       return ERROR_INSTANCE_NOT_FOUND;
+   }
 
    //Invalid port index?
    if(dot1xPaePortNumber < 1 || dot1xPaePortNumber > context->numPorts)
+   {
       return ERROR_INSTANCE_NOT_FOUND;
+   }
 
    //Point to the port that matches the specified port index
    port = &context->ports[dot1xPaePortNumber - 1];
@@ -471,11 +488,15 @@ error_t ieee8021PaeMibGetNextDot1xAuthConfigEntry(const MibObject *object, const
    context = ieee8021PaeMibBase.authContext;
    //Make sure the context is valid
    if(context == NULL)
+   {
       return ERROR_OBJECT_NOT_FOUND;
+   }
 
    //Make sure the buffer is large enough to hold the OID prefix
    if(*nextOidLen < object->oidLen)
+   {
       return ERROR_BUFFER_OVERFLOW;
+   }
 
    //Copy OID prefix
    osMemcpy(nextOid, object->oid, object->oidLen);
@@ -493,7 +514,9 @@ error_t ieee8021PaeMibGetNextDot1xAuthConfigEntry(const MibObject *object, const
       error = mibEncodeIndex(nextOid, *nextOidLen, &n, curPortNum);
       //Any error to report?
       if(error)
+      {
          return error;
+      }
 
       //Check whether the resulting object identifier lexicographically
       //follows the specified OID
@@ -511,7 +534,9 @@ error_t ieee8021PaeMibGetNextDot1xAuthConfigEntry(const MibObject *object, const
    //The specified OID does not lexicographically precede the name
    //of some object?
    if(portNum == 0)
+   {
       return ERROR_OBJECT_NOT_FOUND;
+   }
 
    //Append the instance identifier to the OID prefix
    n = object->oidLen;
@@ -520,7 +545,9 @@ error_t ieee8021PaeMibGetNextDot1xAuthConfigEntry(const MibObject *object, const
    error = mibEncodeIndex(nextOid, *nextOidLen, &n, portNum);
    //Any error to report?
    if(error)
+   {
       return error;
+   }
 
    //Save the length of the resulting object identifier
    *nextOidLen = n;
@@ -555,21 +582,29 @@ error_t ieee8021PaeMibGetDot1xAuthStatsEntry(const MibObject *object, const uint
    error = mibDecodeIndex(oid, oidLen, &n, &dot1xPaePortNumber);
    //Invalid instance identifier?
    if(error)
+   {
       return error;
+   }
 
    //Sanity check
    if(n != oidLen)
+   {
       return ERROR_INSTANCE_NOT_FOUND;
+   }
 
    //Point to the 802.1X authenticator context
    context = (AuthenticatorContext *) ieee8021PaeMibBase.authContext;
    //Sanity check
    if(context == NULL)
+   {
       return ERROR_INSTANCE_NOT_FOUND;
+   }
 
    //Invalid port index?
    if(dot1xPaePortNumber < 1 || dot1xPaePortNumber > context->numPorts)
+   {
       return ERROR_INSTANCE_NOT_FOUND;
+   }
 
    //Point to the port that matches the specified port index
    port = &context->ports[dot1xPaePortNumber - 1];
@@ -708,11 +743,15 @@ error_t ieee8021PaeMibGetNextDot1xAuthStatsEntry(const MibObject *object, const 
    context = ieee8021PaeMibBase.authContext;
    //Make sure the context is valid
    if(context == NULL)
+   {
       return ERROR_OBJECT_NOT_FOUND;
+   }
 
    //Make sure the buffer is large enough to hold the OID prefix
    if(*nextOidLen < object->oidLen)
+   {
       return ERROR_BUFFER_OVERFLOW;
+   }
 
    //Copy OID prefix
    osMemcpy(nextOid, object->oid, object->oidLen);
@@ -730,7 +769,9 @@ error_t ieee8021PaeMibGetNextDot1xAuthStatsEntry(const MibObject *object, const 
       error = mibEncodeIndex(nextOid, *nextOidLen, &n, curPortNum);
       //Any error to report?
       if(error)
+      {
          return error;
+      }
 
       //Check whether the resulting object identifier lexicographically
       //follows the specified OID
@@ -748,7 +789,9 @@ error_t ieee8021PaeMibGetNextDot1xAuthStatsEntry(const MibObject *object, const 
    //The specified OID does not lexicographically precede the name
    //of some object?
    if(portNum == 0)
+   {
       return ERROR_OBJECT_NOT_FOUND;
+   }
 
    //Append the instance identifier to the OID prefix
    n = object->oidLen;
@@ -757,7 +800,9 @@ error_t ieee8021PaeMibGetNextDot1xAuthStatsEntry(const MibObject *object, const 
    error = mibEncodeIndex(nextOid, *nextOidLen, &n, portNum);
    //Any error to report?
    if(error)
+   {
       return error;
+   }
 
    //Save the length of the resulting object identifier
    *nextOidLen = n;
@@ -792,21 +837,29 @@ error_t ieee8021PaeMibGetDot1xAuthSessionStatsEntry(const MibObject *object, con
    error = mibDecodeIndex(oid, oidLen, &n, &dot1xPaePortNumber);
    //Invalid instance identifier?
    if(error)
+   {
       return error;
+   }
 
    //Sanity check
    if(n != oidLen)
+   {
       return ERROR_INSTANCE_NOT_FOUND;
+   }
 
    //Point to the 802.1X authenticator context
    context = (AuthenticatorContext *) ieee8021PaeMibBase.authContext;
    //Sanity check
    if(context == NULL)
+   {
       return ERROR_INSTANCE_NOT_FOUND;
+   }
 
    //Invalid port index?
    if(dot1xPaePortNumber < 1 || dot1xPaePortNumber > context->numPorts)
+   {
       return ERROR_INSTANCE_NOT_FOUND;
+   }
 
    //Point to the port that matches the specified port index
    port = &context->ports[dot1xPaePortNumber - 1];
@@ -950,11 +1003,15 @@ error_t ieee8021PaeMibGetNextDot1xAuthSessionStatsEntry(const MibObject *object,
    context = ieee8021PaeMibBase.authContext;
    //Make sure the context is valid
    if(context == NULL)
+   {
       return ERROR_OBJECT_NOT_FOUND;
+   }
 
    //Make sure the buffer is large enough to hold the OID prefix
    if(*nextOidLen < object->oidLen)
+   {
       return ERROR_BUFFER_OVERFLOW;
+   }
 
    //Copy OID prefix
    osMemcpy(nextOid, object->oid, object->oidLen);
@@ -972,7 +1029,9 @@ error_t ieee8021PaeMibGetNextDot1xAuthSessionStatsEntry(const MibObject *object,
       error = mibEncodeIndex(nextOid, *nextOidLen, &n, curPortNum);
       //Any error to report?
       if(error)
+      {
          return error;
+      }
 
       //Check whether the resulting object identifier lexicographically
       //follows the specified OID
@@ -990,7 +1049,9 @@ error_t ieee8021PaeMibGetNextDot1xAuthSessionStatsEntry(const MibObject *object,
    //The specified OID does not lexicographically precede the name
    //of some object?
    if(portNum == 0)
+   {
       return ERROR_OBJECT_NOT_FOUND;
+   }
 
    //Append the instance identifier to the OID prefix
    n = object->oidLen;
@@ -999,7 +1060,9 @@ error_t ieee8021PaeMibGetNextDot1xAuthSessionStatsEntry(const MibObject *object,
    error = mibEncodeIndex(nextOid, *nextOidLen, &n, portNum);
    //Any error to report?
    if(error)
+   {
       return error;
+   }
 
    //Save the length of the resulting object identifier
    *nextOidLen = n;

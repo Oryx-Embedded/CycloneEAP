@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.6
+ * @version 2.6.8
  **/
 
 #ifndef _EAP_DEBUG_H
@@ -56,13 +56,48 @@ typedef struct
 //EAP related functions
 #if (EAP_TRACE_LEVEL >= TRACE_LEVEL_DEBUG)
    void eapolDumpHeader(const EapolPdu *header);
-   void eapDumpHeader(const EapPacket *header);
+   void eapDumpPacket(const EapPacket *packet, size_t length);
 #else
    #define eapolDumpHeader(header)
-   #define eapDumpHeader(header)
+   #define eapDumpPacket(packet, length)
 #endif
 
-void eapDumpTlsFlags(uint8_t flags);
+void eapDumpHeader(const EapPacket *header);
+
+void eapDumpRequest(const EapRequest *request, size_t length);
+void eapDumpResponse(const EapResponse *response, size_t length);
+
+void eapDumpIdentityRequest(const EapRequest *request, size_t length);
+void eapDumpIdentityResponse(const EapResponse *response, size_t length);
+
+void eapDumpNakResponse(const EapResponse *response, size_t length);
+
+void eapMd5DumpPacket(const EapMd5Packet *packet, size_t length);
+
+void eapMschapv2DumpPacket(const EapMschapv2Packet *packet, size_t length);
+
+void eapMschapv2DumpChallenge(const EapMschapv2Challenge *challenge,
+   size_t length);
+
+void eapMschapv2DumpResponse(const EapMschapv2Response *response,
+   size_t length);
+
+void eapMschapv2DumpSuccessRequest(const EapMschapv2SuccessRequest *request,
+   size_t length);
+
+void eapMschapv2DumpSuccessResponse(const EapMschapv2SuccessResponse *response,
+   size_t length);
+
+void eapMschapv2DumpFailureRequest(const EapMschapv2FailureRequest *request,
+   size_t length);
+
+void eapMschapv2DumpFailureResponse(const EapMschapv2FailureResponse *response,
+   size_t length);
+
+void eapTlsDumpPacket(const EapTlsPacket *packet, size_t length);
+void eapTlsDumpFlags(uint8_t flags);
+
+void eapDumpString(const uint8_t *s, size_t length);
 
 const char_t *eapGetParamName(uint_t value, const EapParamName *paramList,
    size_t paramListLen);

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.6
+ * @version 2.6.8
  **/
 
 //Switch to the appropriate trace level
@@ -287,7 +287,7 @@ void radiusDumpPacket(const RadiusPacket *packet, size_t length)
 
          //Malformed attribute?
          if(attribute->length < sizeof(RadiusAttribute) ||
-            attribute->length > length)
+            attribute->length > (length - i))
          {
             break;
          }
@@ -322,12 +322,12 @@ void radiusDumpAttribute(const RadiusAttribute *attribute)
       //Display the name of the current RADIUS attribute
       if(osStrcmp(typeName, "Unknown") != 0)
       {
-         TRACE_DEBUG("  %s Attribute (%" PRIu8 " bytes)\r\n", typeName,
+         TRACE_DEBUG("  %s Attribute (%" PRIuSIZE " bytes)\r\n", typeName,
             length);
       }
       else
       {
-         TRACE_DEBUG("  Attribute %" PRIu8 " (%" PRIu8 " bytes)\r\n",
+         TRACE_DEBUG("  Attribute %" PRIu8 " (%" PRIuSIZE " bytes)\r\n",
             attribute->type, length);
       }
 
@@ -434,7 +434,7 @@ void radiusDumpAttribute(const RadiusAttribute *attribute)
       case RADIUS_ATTR_PMIP6_VISITED_DHCP6_SERVER_ADDR:
       case RADIUS_ATTR_FRAMED_IPV6_ADDR:
       case RADIUS_ATTR_DNS_SERVER_IPV6_ADDR:
-         radiusDumpIpv4Addr(attribute->value, length);
+         radiusDumpIpv6Addr(attribute->value, length);
          break;
 
       //Unknown format?
@@ -477,8 +477,8 @@ void radiusDumpString(const uint8_t *data, size_t length)
 {
    size_t i;
 
-   //Append prefix
-   TRACE_DEBUG("    ");
+   //Display prefix
+   TRACE_DEBUG("    \"");
 
    //Dump attribute value
    for(i = 0; i < length; i++)
@@ -486,8 +486,8 @@ void radiusDumpString(const uint8_t *data, size_t length)
       TRACE_DEBUG("%c", data[i]);
    }
 
-   //Add a line feed
-   TRACE_DEBUG("\r\n");
+   //Display suffix
+   TRACE_DEBUG("\"\r\n");
 }
 
 
@@ -577,7 +577,9 @@ const char_t *radiusGetParamName(uint_t value, const RadiusParamName *paramList,
    for(i = 0; i < paramListLen; i++)
    {
       if(paramList[i].value == value)
+      {
          return paramList[i].name;
+      }
    }
 
    //Unknown value

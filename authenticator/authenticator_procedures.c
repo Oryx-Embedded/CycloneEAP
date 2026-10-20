@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.6
+ * @version 2.6.8
  **/
 
 //Switch to the appropriate trace level
@@ -53,25 +53,24 @@ void authenticatorSetAuthPortStatus(AuthenticatorPort *port,
    AuthenticatorPortStatus status)
 {
    NetInterface *interface;
+   AuthenticatorContext *context;
+   SwitchPortState portState;
 
+   //Point to the 802.1X authenticator context
+   context = port->context;
    //Point to the underlying network interface
-   interface = port->context->interface;
+   interface = context->interface;
 
-   //Update the state of the specified port
+   //Check authorization state
    if(status == AUTHENTICATOR_PORT_STATUS_AUTH)
    {
       //Debug message
       TRACE_INFO("Port %" PRIu8 ": Set port status to Authorized\r\n",
          port->portIndex);
 
-      //A port in the authorized state effectively means that the
-      //supplicant has been successfully authenticated
-      if(interface->switchDriver != NULL &&
-         interface->switchDriver->setPortState != NULL)
-      {
-         interface->switchDriver->setPortState(interface, port->portIndex,
-            SWITCH_PORT_STATE_FORWARDING);
-      }
+      //A port in the authorized state effectively means that the supplicant has
+      //been successfully authenticated
+      portState = SWITCH_PORT_STATE_FORWARDING;
    }
    else
    {
@@ -79,14 +78,24 @@ void authenticatorSetAuthPortStatus(AuthenticatorPort *port,
       TRACE_INFO("Port %" PRIu8 ": Set port status to Unauthorized\r\n",
          port->portIndex);
 
-      //If the port is in the unauthorized state, then the client is not
-      //granted access to the network
-      if(interface->switchDriver != NULL &&
-         interface->switchDriver->setPortState != NULL)
-      {
-         interface->switchDriver->setPortState(interface, port->portIndex,
-            SWITCH_PORT_STATE_BLOCKING);
-      }
+      //If the port is in the unauthorized state, then the client is not granted
+      //access to the network
+      portState = SWITCH_PORT_STATE_BLOCKING;
+   }
+
+   //Valid switch driver?
+   if(interface->switchDriver != NULL &&
+      interface->switchDriver->setPortState != NULL)
+   {
+      //Get exclusive access
+      netLock(context->netContext);
+
+      //Update the state of the specified port
+      interface->switchDriver->setPortState(interface, port->portIndex,
+         portState);
+
+      //Release exclusive access
+      netUnlock(context->netContext);
    }
 
    //Save authorization state
@@ -133,16 +142,16 @@ void authenticatorTxCannedFail(AuthenticatorPort *port)
    TRACE_DEBUG("Port %" PRIu8 ": Sending EAP packet (%" PRIuSIZE " bytes)...\r\n",
       port->portIndex, n);
 
-   //Dump EAP header contents for debugging purpose
-   eapDumpHeader(packet);
-
-   //Total length of the EAPOL packet
-   n += sizeof(EapolPdu);
+   //Dump EAP packet for debugging purpose
+   eapDumpPacket(packet, n);
 
    //Format EAPOL packet
    pdu->protocolVersion = EAPOL_VERSION_2;
    pdu->packetType = EAPOL_TYPE_EAP;
-   pdu->packetBodyLen = ntohs(n);
+   pdu->packetBodyLen = htons(n);
+
+   //Total length of the EAPOL packet
+   n += sizeof(EapolPdu);
 
    //Debug message
    TRACE_INFO("Port %" PRIu8 ": Sending EAPOL packet (%" PRIuSIZE " bytes)...\r\n",
@@ -195,16 +204,16 @@ void authenticatorTxCannedSuccess(AuthenticatorPort *port)
    TRACE_DEBUG("Port %" PRIu8 ": Sending EAP packet (%" PRIuSIZE " bytes)...\r\n",
       port->portIndex, n);
 
-   //Dump EAP header contents for debugging purpose
-   eapDumpHeader(packet);
-
-   //Total length of the EAPOL packet
-   n += sizeof(EapolPdu);
+   //Dump EAP packet for debugging purpose
+   eapDumpPacket(packet, n);
 
    //Format EAPOL packet
    pdu->protocolVersion = EAPOL_VERSION_2;
    pdu->packetType = EAPOL_TYPE_EAP;
-   pdu->packetBodyLen = ntohs(n);
+   pdu->packetBodyLen = htons(n);
+
+   //Total length of the EAPOL packet
+   n += sizeof(EapolPdu);
 
    //Debug message
    TRACE_INFO("Port %" PRIu8 ": Sending EAPOL packet (%" PRIuSIZE " bytes)...\r\n",
@@ -264,7 +273,7 @@ void authenticatorTxReq(AuthenticatorPort *port)
       //Format EAPOL packet
       pdu->protocolVersion = EAPOL_VERSION_2;
       pdu->packetType = EAPOL_TYPE_EAP;
-      pdu->packetBodyLen = ntohs(length);
+      pdu->packetBodyLen = htons(length);
 
       //Total length of the EAPOL packet
       length += sizeof(EapolPdu);

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.6
+ * @version 2.6.8
  **/
 
 #ifndef _EAP_H
@@ -35,6 +35,7 @@
 #include "eap_config.h"
 #include "core/net.h"
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 
 
 /*
@@ -64,13 +65,13 @@
 #endif
 
 //Version string
-#define CYCLONE_EAP_VERSION_STRING "2.6.6"
+#define CYCLONE_EAP_VERSION_STRING "2.6.8"
 //Major version
 #define CYCLONE_EAP_MAJOR_VERSION 2
 //Minor version
 #define CYCLONE_EAP_MINOR_VERSION 6
 //Revision number
-#define CYCLONE_EAP_REV_NUMBER 6
+#define CYCLONE_EAP_REV_NUMBER 8
 
 //EAP support
 #ifndef EAP_SUPPORT
@@ -84,6 +85,13 @@
    #define EAP_MD5_SUPPORT DISABLED
 #elif (EAP_MD5_SUPPORT != ENABLED && EAP_MD5_SUPPORT != DISABLED)
    #error EAP_MD5_SUPPORT parameter is not valid
+#endif
+
+//MS-CHAP-V2 authentication method support
+#ifndef EAP_MSCHAPV2_SUPPORT
+   #define EAP_MSCHAPV2_SUPPORT DISABLED
+#elif (EAP_MSCHAPV2_SUPPORT != ENABLED && EAP_MSCHAPV2_SUPPORT != DISABLED)
+   #error EAP_MSCHAPV2_SUPPORT parameter is not valid
 #endif
 
 //EAP-TLS authentication method support
@@ -172,9 +180,23 @@ typedef enum
    EAP_METHOD_TYPE_TLS           = 13, ///<EAP-TLS
    EAP_METHOD_TYPE_TTLS          = 21, ///<EAP-TTLS
    EAP_METHOD_TYPE_PEAP          = 25, ///<PEAP
-   EAP_METHOD_TYPE_MSCHAP_V2     = 29, ///<EAP-MSCHAP-V2
+   EAP_METHOD_TYPE_MSCHAPV2      = 26, ///<MS-CHAP-V2
    EAP_METHOD_TYPE_EXPANDED_NAK  = 254 ///<Expanded NAK
 } EapMethodType;
+
+
+/**
+ * @brief MS-CHAP-V2 opcodes
+ **/
+
+typedef enum
+{
+   EAP_MSCHAPV2_CODE_INVALID    = 0,
+   EAP_MSCHAPV2_CODE_CHALLENGE  = 1, ///<Challenge
+   EAP_MSCHAPV2_CODE_RESPONSE   = 2, ///<Response
+   EAP_MSCHAPV2_CODE_SUCCESS    = 3, ///<Success
+   EAP_MSCHAPV2_CODE_FAILURE    = 4  ///<Failure
+} EapMschapv2Code;
 
 
 /**
@@ -250,6 +272,155 @@ typedef __packed_struct
    uint8_t type;       //4
    uint8_t data[];     //5
 } EapResponse;
+
+
+/**
+ * @brief EAP-MD5 packet
+ **/
+
+typedef __packed_struct
+{
+   uint8_t code;       //0
+   uint8_t identifier; //1
+   uint16_t length;    //2-3
+   uint8_t type;       //4
+   uint8_t valueSize;  //5
+   uint8_t value[];    //6
+} EapMd5Packet;
+
+
+/**
+ * @brief EAP MS-CHAP-V2 packet
+ **/
+
+typedef __packed_struct
+{
+   uint8_t code;       //0
+   uint8_t identifier; //1
+   uint16_t length;    //2-3
+   uint8_t type;       //4
+   uint8_t opcode;     //5
+} EapMschapv2Packet;
+
+
+/**
+ * @brief EAP MS-CHAP-V2 Challenge packet
+ **/
+
+typedef __packed_struct
+{
+   uint8_t code;          //0
+   uint8_t identifier;    //1
+   uint16_t length;       //2-3
+   uint8_t type;          //4
+   uint8_t opcode;        //5
+   uint8_t mschapv2Id;    //6
+   uint16_t msLength;     //7-8
+   uint8_t valueSize;     //9
+   uint8_t challenge[16]; //10-25
+   uint8_t name[];        //26
+} EapMschapv2Challenge;
+
+
+/**
+ * @brief EAP MS-CHAP-V2 Response packet
+ **/
+
+typedef __packed_struct
+{
+   uint8_t code;              //0
+   uint8_t identifier;        //1
+   uint16_t length;           //2-3
+   uint8_t type;              //4
+   uint8_t opcode;            //5
+   uint8_t mschapv2Id;        //6
+   uint16_t msLength;         //7-8
+   uint8_t valueSize;         //9
+   uint8_t peerChallenge[16]; //10-25
+   uint8_t reserved[8];       //26-33
+   uint8_t ntResponse[24];    //34-57
+   uint8_t flags;             //58
+   uint8_t name[];            //59
+} EapMschapv2Response;
+
+
+/**
+ * @brief EAP MS-CHAP-V2 Success Request packet
+ **/
+
+typedef __packed_struct
+{
+   uint8_t code;         //0
+   uint8_t identifier;   //1
+   uint16_t length;      //2-3
+   uint8_t type;         //4
+   uint8_t opcode;       //5
+   uint8_t mschapv2Id;   //6
+   uint16_t msLength;    //7-8
+   uint8_t message[];    //9
+} EapMschapv2SuccessRequest;
+
+
+/**
+ * @brief EAP MS-CHAP-V2 Success Response packet
+ **/
+
+typedef __packed_struct
+{
+   uint8_t code;         //0
+   uint8_t identifier;   //1
+   uint16_t length;      //2-3
+   uint8_t type;         //4
+   uint8_t opcode;       //5
+} EapMschapv2SuccessResponse;
+
+
+/**
+ * @brief EAP MS-CHAP-V2 Failure Request packet
+ **/
+
+typedef __packed_struct
+{
+   uint8_t code;         //0
+   uint8_t identifier;   //1
+   uint16_t length;      //2-3
+   uint8_t type;         //4
+   uint8_t opcode;       //5
+   uint8_t mschapv2Id;   //6
+   uint16_t msLength;    //7-8
+   uint8_t message[];    //9
+} EapMschapv2FailureRequest;
+
+
+/**
+ * @brief EAP MS-CHAP-V2 Failure Response packet
+ **/
+
+typedef __packed_struct
+{
+   uint8_t code;         //0
+   uint8_t identifier;   //1
+   uint16_t length;      //2-3
+   uint8_t type;         //4
+   uint8_t opcode;       //5
+} EapMschapv2FailureResponse;
+
+
+/**
+ * @brief EAP MS-CHAP-V2 Change-Password packet
+ **/
+
+typedef __packed_struct
+{
+   uint8_t code;       //0
+   uint8_t identifier; //1
+   uint16_t length;    //2-3
+   uint8_t type;       //4
+   uint8_t opcode;     //5
+   uint8_t mschapv2Id; //6
+   uint16_t msLength;  //7-8
+   uint8_t data[];     //9
+} EapMschapv2ChangePassword;
 
 
 /**

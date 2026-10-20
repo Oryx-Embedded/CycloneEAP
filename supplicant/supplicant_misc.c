@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.6
+ * @version 2.6.8
  **/
 
 //Switch to the appropriate trace level
@@ -326,19 +326,25 @@ void supplicantProcessEapolPdu(SupplicantContext *context)
    error = socketReceiveMsg(context->socket, &msg, 0);
    //Any error to report?
    if(error)
+   {
       return;
+   }
 
 #if (ETH_PORT_TAGGING_SUPPORT == ENABLED)
    //Check the port number on which the EAPOL PDU was received
    if(msg.switchPort != context->portIndex && context->portIndex != 0)
+   {
       return;
+   }
 #endif
 
    //Get the MAC address assigned to the interface
    error = netGetMacAddr(context->interface, &macAddr);
    //Any error to report?
    if(error)
+   {
       return;
+   }
 
    //The destination MAC address field contains the PAE group address, or
    //the specific MAC address of the PAE (refer to IEEE Std 802.1X-2004,
@@ -351,11 +357,15 @@ void supplicantProcessEapolPdu(SupplicantContext *context)
 
    //The received MPDU must contain the PAE EtherType
    if(msg.ethType != ETH_TYPE_EAPOL)
+   {
       return;
+   }
 
    //Malformed EAPOL packet?
    if(msg.length < sizeof(EapolPdu))
+   {
       return;
+   }
 
    //Point to the EAPOL packet
    pdu = (EapolPdu *) context->rxBuffer;
@@ -371,7 +381,9 @@ void supplicantProcessEapolPdu(SupplicantContext *context)
 
    //Malformed EAPOL packet?
    if(msg.length < (sizeof(EapolPdu) + length))
+   {
       return;
+   }
 
    //Check packet type
    if(pdu->packetType == EAPOL_TYPE_EAP)
@@ -395,22 +407,28 @@ void supplicantProcessEapPacket(SupplicantContext *context,
 {
    //Malformed EAP packet?
    if(length < sizeof(EapPacket))
+   {
       return;
+   }
 
    //Debug message
    TRACE_DEBUG("EAP packet received (%" PRIuSIZE " bytes)\r\n", length);
-   //Dump EAP header contents for debugging purpose
-   eapDumpHeader(packet);
+   //Dump EAP packet for debugging purpose
+   eapDumpPacket(packet, length);
 
    //The Length field is two octets and indicates the length, in octets, of the
    //EAP packet including the Code, Identifier, Length, and Data fields
    if(ntohs(packet->length) < sizeof(EapPacket))
+   {
       return;
+   }
 
    //A message with the Length field set to a value larger than the number of
    //received octets must be silently discarded (refer to RFC 3748, section 4.0)
    if(ntohs(packet->length) > length)
+   {
       return;
+   }
 
    //Octets outside the range of the Length field should be treated as data
    //link layer padding and must be ignored upon reception
@@ -418,7 +436,9 @@ void supplicantProcessEapPacket(SupplicantContext *context,
 
    //Based on the Code field, the EAP layer demultiplexes incoming EAP packets
    //to the EAP peer and authenticator layers
-   if(packet->code != EAP_CODE_RESPONSE)
+   if(packet->code == EAP_CODE_REQUEST ||
+      packet->code == EAP_CODE_SUCCESS ||
+      packet->code == EAP_CODE_FAILURE)
    {
       //Point to the EAP request
       context->eapReqData = (uint8_t *) packet;
@@ -430,6 +450,11 @@ void supplicantProcessEapPacket(SupplicantContext *context,
 
       //Invoke EAP to perform whatever processing is needed
       supplicantFsm(context);
+   }
+   else
+   {
+      //Unless a host implements an EAP authenticator layer, EAP Response
+      //packets will be silently discarded (refer to RFC 3748, section 2.3).
    }
 }
 

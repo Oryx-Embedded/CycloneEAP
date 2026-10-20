@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.6
+ * @version 2.6.8
  **/
 
 //Switch to the appropriate trace level
@@ -375,7 +375,9 @@ void authenticatorProcessEapolPdu(AuthenticatorContext *context)
    error = socketReceiveMsg(context->peerSocket, &msg, 0);
    //Failed to receive packet
    if(error)
+   {
       return;
+   }
 
 #if (ETH_PORT_TAGGING_SUPPORT == ENABLED)
    //Save the port number on which the EAPOL PDU was received
@@ -387,15 +389,21 @@ void authenticatorProcessEapolPdu(AuthenticatorContext *context)
 
    //The destination MAC address field must contain the PAE group address
    if(!macCompAddr(&msg.destMacAddr, &PAE_GROUP_ADDR))
+   {
       return;
+   }
 
    //The received MPDU must contain the PAE EtherType
    if(msg.ethType != ETH_TYPE_EAPOL)
+   {
       return;
+   }
 
    //Malformed EAPOL packet?
    if(msg.length < sizeof(EapolPdu))
+   {
       return;
+   }
 
    //Point to the EAPOL packet
    pdu = (EapolPdu *) context->rxBuffer;
@@ -409,7 +417,9 @@ void authenticatorProcessEapolPdu(AuthenticatorContext *context)
 
    //Sanity check
    if(portIndex > context->numPorts)
+   {
       return;
+   }
 
    //Point to the port that matches the specified port index
    port = &context->ports[portIndex - 1];
@@ -483,24 +493,30 @@ void authenticatorProcessEapPacket(AuthenticatorPort *port,
 {
    //Malformed EAP packet?
    if(length < sizeof(EapPacket))
+   {
       return;
+   }
 
    //Debug message
    TRACE_DEBUG("Port %" PRIu8 ": EAP packet received (%" PRIuSIZE " bytes)...\r\n",
       port->portIndex, length);
 
-   //Dump EAP header contents for debugging purpose
-   eapDumpHeader(packet);
+   //Dump EAP packet for debugging purpose
+   eapDumpPacket(packet, length);
 
    //The Length field is two octets and indicates the length, in octets, of the
    //EAP packet including the Code, Identifier, Length, and Data fields
    if(ntohs(packet->length) < sizeof(EapPacket))
+   {
       return;
+   }
 
    //A message with the Length field set to a value larger than the number of
    //received octets must be silently discarded (refer to RFC 3748, section 4.0)
    if(ntohs(packet->length) > length)
+   {
       return;
+   }
 
    //Octets outside the range of the Length field should be treated as data
    //link layer padding and must be ignored upon reception
@@ -558,7 +574,9 @@ error_t authenticatorBuildRadiusRequest(AuthenticatorPort *port)
       port->reqAuthenticator, 16);
    //Any error to report?
    if(error)
+   {
       return error;
+   }
 
    //Generate a new RADIUS packet identifier
    port->aaaReqId = authenticatorGetNextRadiusId(context);
@@ -614,7 +632,9 @@ error_t authenticatorBuildRadiusRequest(AuthenticatorPort *port)
 
    //Any error to report?
    if(error)
+   {
       return error;
+   }
 
    //Either NAS-Identifier, NAS-IP-Address or NAS-IPv6-Address attributes
    //must be included (refer to RFC 3579, section 3)
@@ -652,8 +672,8 @@ error_t authenticatorBuildRadiusRequest(AuthenticatorPort *port)
    //The NAS-Port-Id attribute contains a text string which identifies the
    //port of the NAS which is authenticating the user (refer to RFC 2869,
    //section 5.17)
-   osSprintf((char_t *) buffer, "%s_%" PRIu8, context->interface->name,
-      port->portIndex);
+   osSnprintf((char_t *) buffer, sizeof(buffer), "%s_%" PRIu8,
+      context->interface->name, port->portIndex);
 
    radiusAddAttribute(packet, RADIUS_ATTR_NAS_PORT_ID, buffer,
       osStrlen((char_t *) buffer));
@@ -693,7 +713,7 @@ error_t authenticatorBuildRadiusRequest(AuthenticatorPort *port)
       n = MIN(port->eapRespDataLen - i, RADIUS_MAX_ATTR_VALUE_LEN);
 
       //Make sure the buffer is large enough to hold the EAP-Message attribute
-      if((htons(packet->length) + sizeof(RadiusAttribute) + n) >
+      if((ntohs(packet->length) + sizeof(RadiusAttribute) + n) >
          AUTHENTICATOR_TX_BUFFER_SIZE)
       {
          return ERROR_BUFFER_OVERFLOW;
@@ -711,7 +731,7 @@ error_t authenticatorBuildRadiusRequest(AuthenticatorPort *port)
 
    //Make sure the buffer is large enough to hold the Message-Authenticator
    //attribute
-   if((htons(packet->length) + sizeof(RadiusAttribute) + MD5_DIGEST_SIZE) >
+   if((ntohs(packet->length) + sizeof(RadiusAttribute) + MD5_DIGEST_SIZE) >
       AUTHENTICATOR_TX_BUFFER_SIZE)
    {
       return ERROR_BUFFER_OVERFLOW;
@@ -722,7 +742,7 @@ error_t authenticatorBuildRadiusRequest(AuthenticatorPort *port)
       MD5_DIGEST_SIZE);
 
    //Retrieve the total length of the RADIUS packet
-   n = htons(packet->length);
+   n = ntohs(packet->length);
 
    //Transactions between the client and RADIUS server are authenticated through
    //the use of a shared secret (refer to RFC 2865, section 1)
@@ -730,7 +750,9 @@ error_t authenticatorBuildRadiusRequest(AuthenticatorPort *port)
       context->serverKeyLen);
    //Any error to report?
    if(error)
+   {
       return error;
+   }
 
    //When present in an Access-Request packet, Message-Authenticator is an
    //HMAC-MD5 hash of the entire Access-Request packet, including Type, ID,
@@ -836,7 +858,9 @@ void authenticatorProcessRadiusPacket(AuthenticatorContext *context)
    error = socketReceiveMsg(context->serverSocket, &msg, 0);
    //Failed to receive packet
    if(error)
+   {
       return;
+   }
 
    //Debug message
    TRACE_INFO("RADIUS packet received (%" PRIuSIZE " bytes)...\r\n",
@@ -845,21 +869,29 @@ void authenticatorProcessRadiusPacket(AuthenticatorContext *context)
 #if (ETH_PORT_TAGGING_SUPPORT == ENABLED)
    //Check the port number on which the EAPOL PDU was received
    if(msg.switchPort != context->serverPortIndex && context->serverPortIndex != 0)
+   {
       return;
+   }
 #endif
 
    //Ensure the source IP address matches the RADIUS server's IP address
    if(!ipCompAddr(&msg.srcIpAddr, &context->serverIpAddr))
+   {
       return;
+   }
 
    //The officially assigned port number for RADIUS is 1812 (refer to RFC 2865,
    //section 3)
    if(msg.srcPort != context->serverPort)
+   {
       return;
+   }
 
    //Malformed RADIUS packet?
    if(msg.length < sizeof(RadiusPacket))
+   {
       return;
+   }
 
    //Point to the RADIUS packet
    packet = (RadiusPacket *) context->rxBuffer;
@@ -871,11 +903,15 @@ void authenticatorProcessRadiusPacket(AuthenticatorContext *context)
    //If the packet is shorter than the Length field indicates, it must be
    //silently discarded
    if(msg.length < length)
+   {
       return;
+   }
 
    //The minimum length is 20 and maximum length is 4096
    if(length < sizeof(RadiusPacket) || length > RADIUS_MAX_PACKET_SIZE)
+   {
       return;
+   }
 
    //Dump RADIUS header contents for debugging purpose
    radiusDumpPacket(packet, length);
@@ -911,7 +947,9 @@ void authenticatorProcessRadiusPacket(AuthenticatorContext *context)
 
    //No matching request found?
    if(i >= context->numPorts)
+   {
       return;
+   }
 
    //Point to the MD5 context
    md5Context = &context->hmacContext.hashContext.md5Context;
@@ -935,7 +973,7 @@ void authenticatorProcessRadiusPacket(AuthenticatorContext *context)
 
    //The Response Authenticator field must contain the correct response for the
    //pending Access-Request. Invalid packets are silently discarded
-   if(osMemcmp(digest, packet->authenticator, MD5_DIGEST_SIZE) != 0)
+   if(cryptoCompMem(digest, packet->authenticator, MD5_DIGEST_SIZE) != 0)
    {
       //Debug message
       TRACE_WARNING("Invalid Response Authenticator value!\r\n");
@@ -953,11 +991,15 @@ void authenticatorProcessRadiusPacket(AuthenticatorContext *context)
    //EAP-Message attribute(s) without a Message-Authenticator attribute should
    //be silently discarded by the NAS (refer to RFC 3579, section 3.1)
    if(attribute == NULL)
+   {
       return;
+   }
 
    //Malformed Message-Authenticator attribute?
    if(attribute->length != (sizeof(RadiusAttribute) + MD5_DIGEST_SIZE))
+   {
       return;
+   }
 
    //Save the offset to the Message-Authenticator value
    n = attribute->value - packet->attributes;
@@ -974,7 +1016,9 @@ void authenticatorProcessRadiusPacket(AuthenticatorContext *context)
       context->serverKeyLen);
    //Any error to report?
    if(error)
+   {
       return;
+   }
 
    //For Access-Challenge, Access-Accept, and Access-Reject packets, the
    //Message-Authenticator is calculated as follows, using the Request-
@@ -994,7 +1038,7 @@ void authenticatorProcessRadiusPacket(AuthenticatorContext *context)
    //A NAS supporting the EAP-Message attribute must calculate the correct
    //value of the Message-Authenticator and must silently discard the packet
    //if it does not match the value sent (refer to RFC 3579, section 3.1)
-   if(osMemcmp(digest, attribute->value, MD5_DIGEST_SIZE) != 0)
+   if(cryptoCompMem(digest, attribute->value, MD5_DIGEST_SIZE) != 0)
    {
       //Debug message
       TRACE_WARNING("Invalid Message Authenticator value!\r\n");
@@ -1040,7 +1084,8 @@ void authenticatorProcessRadiusPacket(AuthenticatorContext *context)
 
          //Make sure the buffer is large enough to hold the reconstructed EAP
          //packet
-         if((port->aaaEapReqDataLen + n) <= AUTHENTICATOR_TX_BUFFER_SIZE)
+         if((port->aaaEapReqDataLen + n) <= (AUTHENTICATOR_TX_BUFFER_SIZE -
+            sizeof(EapolPdu)))
          {
             //Copy the current fragment
             osMemcpy(context->txBuffer + port->aaaEapReqDataLen,
@@ -1063,49 +1108,69 @@ void authenticatorProcessRadiusPacket(AuthenticatorContext *context)
       }
    }
 
-   //Malformed EAP packet?
-   if(port->aaaEapReqDataLen < sizeof(EapPacket))
-      return;
-
-   //Point to the EAP packet
-   eapPacket = (EapPacket *) context->txBuffer;
-
-   //Check Code field
-   if(eapPacket->code == EAP_CODE_REQUEST ||
-      eapPacket->code == EAP_CODE_SUCCESS ||
-      eapPacket->code == EAP_CODE_FAILURE)
+   //Valid EAP packet?
+   if(port->aaaEapReqDataLen >= sizeof(EapPacket))
    {
-      //The corresponding request (or success/failure) packet is stored in
-      //aaaEapReqData
-      osMemcpy(port->aaaEapReqData, context->txBuffer, port->aaaEapReqDataLen);
+      //Point to the EAP packet
+      eapPacket = (EapPacket *) context->txBuffer;
 
-      //Debug message
-      TRACE_DEBUG("Port %" PRIu8 ": Sending EAP packet (%" PRIuSIZE " bytes)...\r\n",
-         port->portIndex, port->aaaEapReqDataLen);
-
-      //Dump EAP header contents for debugging purpose
-      eapDumpHeader(eapPacket);
-
-      //When the authenticator has finished processing the message, it sets one
-      //of the signals aaaEapReq, aaaSuccess, and aaaFail
-      if(eapPacket->code == EAP_CODE_REQUEST)
+      //The encapsulated EAP packet is forwarded to the peer only if its Code
+      //field is consistent with the RADIUS packet type
+      if((packet->code == RADIUS_CODE_ACCESS_ACCEPT &&
+         eapPacket->code == EAP_CODE_SUCCESS) ||
+         (packet->code == RADIUS_CODE_ACCESS_REJECT &&
+         eapPacket->code == EAP_CODE_FAILURE) ||
+         (packet->code == RADIUS_CODE_ACCESS_CHALLENGE &&
+         eapPacket->code == EAP_CODE_REQUEST))
       {
-         port->aaaEapReq = TRUE;
-      }
-      else if(eapPacket->code == EAP_CODE_SUCCESS)
-      {
-         port->aaaSuccess = TRUE;
+         //The corresponding request (or success/failure) packet is stored in
+         //aaaEapReqData
+         osMemcpy(port->aaaEapReqData, context->txBuffer,
+            port->aaaEapReqDataLen);
+
+         //Debug message
+         TRACE_DEBUG("Port %" PRIu8 ": Sending EAP packet (%" PRIuSIZE " bytes)...\r\n",
+            port->portIndex, port->aaaEapReqDataLen);
+
+         //Dump EAP packet for debugging purpose
+         eapDumpPacket(eapPacket, port->aaaEapReqDataLen);
       }
       else
       {
-         port->aaaFail = TRUE;
+         //The NAS must not manufacture EAP packets in order to correct
+         //contradictory messages that it receives (refer to RFC 3579,
+         //section 2.6.3)
+         port->aaaEapReqDataLen = 0;
       }
-
    }
    else
    {
-      //The aaaEapNoReq flag indicates that the most recent response has been
-      //processed, but that there is no new request to send
+      //The RADIUS packet does not contain any EAP-Message attribute, or the
+      //reconstructed EAP packet is malformed
+      port->aaaEapReqDataLen = 0;
+   }
+
+   //The NAS must make its access control decision based solely on the RADIUS
+   //packet type (refer to RFC 3579, section 2.6.3)
+   if(packet->code == RADIUS_CODE_ACCESS_ACCEPT)
+   {
+      //The state machine has reached the SUCCESS state
+      port->aaaSuccess = TRUE;
+   }
+   else if(packet->code == RADIUS_CODE_ACCESS_REJECT)
+   {
+      //The state machine has reached the FAILURE state
+      port->aaaFail = TRUE;
+   }
+   else if(port->aaaEapReqDataLen > 0)
+   {
+      //A new EAP request is ready to be sent
+      port->aaaEapReq = TRUE;
+   }
+   else
+   {
+      //The most recent response has been processed, but that there is no new
+      //request to send
       port->aaaEapNoReq = TRUE;
    }
 

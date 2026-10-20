@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.6
+ * @version 2.6.8
  **/
 
 //Switch to the appropriate trace level
@@ -53,7 +53,9 @@ error_t eapTlsCheckRequest(SupplicantContext *context,
 {
    //Check the length of the EAP request
    if(length < sizeof(EapTlsPacket))
+   {
       return ERROR_INVALID_LENGTH;
+   }
 
    //The L flag is set to indicate the presence of the four-octet TLS Message
    //Length field (refer to RFC 5216, section 2.1.5)
@@ -61,7 +63,9 @@ error_t eapTlsCheckRequest(SupplicantContext *context,
    {
       //Malformed request?
       if(length < (sizeof(EapTlsPacket) + sizeof(uint32_t)))
+      {
          return ERROR_INVALID_LENGTH;
+      }
    }
 
    //The request is valid
@@ -252,7 +256,7 @@ void eapTlsBuildResponse(SupplicantContext *context)
    n = sizeof(EapTlsPacket);
 
    //Check the length of the TLS handshake message
-   if(context->txBufferLen < EAP_TLS_MAX_FRAG_SIZE)
+   if(context->txBufferLen <= EAP_TLS_MAX_FRAG_SIZE)
    {
       //TLS handshake messages should not be fragmented into multiple TLS
       //records if they fit within a single TLS record (refer to RFC 5216,
@@ -302,8 +306,8 @@ void eapTlsBuildResponse(SupplicantContext *context)
 
    //Debug message
    TRACE_DEBUG("Sending EAP packet (%" PRIuSIZE " bytes)\r\n", n);
-   //Dump EAP header contents for debugging purpose
-   eapDumpHeader((EapPacket *) response);
+   //Dump EAP packet for debugging purpose
+   eapDumpPacket((EapPacket *) response, n);
 
    //Save the length of the EAP response
    context->eapRespDataLen = n;
@@ -337,27 +341,35 @@ error_t eapOpenTls(SupplicantContext *context)
    context->tlsContext = tlsInit();
    //Initialization failed?
    if(context->tlsContext == NULL)
+   {
       return ERROR_OUT_OF_MEMORY;
+   }
 
    //Set the transport protocol to be used (EAP)
    error = tlsSetTransportProtocol(context->tlsContext,
       TLS_TRANSPORT_PROTOCOL_EAP);
    //Any error to report?
    if(error)
+   {
       return error;
+   }
 
    //Set send and receive callbacks (I/O abstraction layer)
    error = tlsSetSocketCallbacks(context->tlsContext, eapTlsSendCallback,
       eapTlsReceiveCallback, (TlsSocketHandle) context);
    //Any error to report?
    if(error)
+   {
       return error;
+   }
 
    //Select client operation mode
    error = tlsSetConnectionEnd(context->tlsContext, TLS_CONNECTION_END_CLIENT);
    //Any error to report?
    if(error)
+   {
       return error;
+   }
 
    //Invoke user-defined callback, if any
    if(context->tlsInitCallback != NULL)
@@ -366,7 +378,9 @@ error_t eapOpenTls(SupplicantContext *context)
       error = context->tlsInitCallback(context, context->tlsContext);
       //Any error to report?
       if(error)
+      {
          return error;
+      }
    }
 
    //Successful processing

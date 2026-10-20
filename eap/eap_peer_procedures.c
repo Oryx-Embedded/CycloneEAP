@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.6
+ * @version 2.6.8
  **/
 
 //Switch to the appropriate trace level
@@ -35,6 +35,7 @@
 #include "supplicant/supplicant.h"
 #include "supplicant/supplicant_procedures.h"
 #include "eap/eap_md5.h"
+#include "eap/eap_mschapv2.h"
 #include "eap/eap_tls.h"
 #include "eap/eap_debug.h"
 #include "debug.h"
@@ -116,7 +117,7 @@ bool_t eapCheckReq(SupplicantContext *context)
    TRACE_DEBUG("m.check() procedure...\r\n");
 
 #if (EAP_MD5_SUPPORT == ENABLED)
-   //EAP-MD5 method?
+   //MD5-Challenge authentication method?
    if(context->selectedMethod == EAP_METHOD_TYPE_MD5_CHALLENGE)
    {
       //Test the validity of the message
@@ -125,8 +126,18 @@ bool_t eapCheckReq(SupplicantContext *context)
    }
    else
 #endif
+#if (EAP_MSCHAPV2_SUPPORT == ENABLED)
+   //MS-CHAP-V2 authentication method?
+   if(context->selectedMethod == EAP_METHOD_TYPE_MSCHAPV2)
+   {
+      //Test the validity of the message
+      error = eapMschapv2CheckRequest(context,
+         (EapMschapv2Packet *) context->eapReqData, context->eapReqDataLen);
+   }
+   else
+#endif
 #if (EAP_TLS_SUPPORT == ENABLED)
-   //EAP-TLS method?
+   //EAP-TLS authentication method?
    if(context->selectedMethod == EAP_METHOD_TYPE_TLS)
    {
       //Test the validity of the message
@@ -157,7 +168,7 @@ void eapProcessReq(SupplicantContext *context)
    TRACE_DEBUG("m.process() procedure...\r\n");
 
 #if (EAP_MD5_SUPPORT == ENABLED)
-   //EAP-MD5 method?
+   //MD5-Challenge authentication method?
    if(context->selectedMethod == EAP_METHOD_TYPE_MD5_CHALLENGE)
    {
       //Parse and process the incoming request
@@ -166,8 +177,18 @@ void eapProcessReq(SupplicantContext *context)
    }
    else
 #endif
+#if (EAP_MSCHAPV2_SUPPORT == ENABLED)
+   //MS-CHAP-V2 authentication method?
+   if(context->selectedMethod == EAP_METHOD_TYPE_MSCHAPV2)
+   {
+      //Parse and process the incoming request
+      eapMschapv2ProcessRequest(context,
+         (EapMschapv2Packet *) context->eapReqData, context->eapReqDataLen);
+   }
+   else
+#endif
 #if (EAP_TLS_SUPPORT == ENABLED)
-   //EAP-TLS method?
+   //EAP-TLS authentication method?
    if(context->selectedMethod == EAP_METHOD_TYPE_TLS)
    {
       //Parse and process the incoming request
@@ -210,7 +231,7 @@ void eapBuildResp(SupplicantContext *context)
    TRACE_DEBUG("m.buildResp() procedure...\r\n");
 
 #if (EAP_MD5_SUPPORT == ENABLED)
-   //EAP-MD5 method?
+   //MD5-Challenge authentication method?
    if(context->selectedMethod == EAP_METHOD_TYPE_MD5_CHALLENGE)
    {
       //Create a response message
@@ -218,8 +239,17 @@ void eapBuildResp(SupplicantContext *context)
    }
    else
 #endif
+#if (EAP_MSCHAPV2_SUPPORT == ENABLED)
+   //MS-CHAP-V2 authentication method?
+   if(context->selectedMethod == EAP_METHOD_TYPE_MSCHAPV2)
+   {
+      //Create a response message
+      eapMschapv2BuildResponse(context);
+   }
+   else
+#endif
 #if (EAP_TLS_SUPPORT == ENABLED)
-   //EAP-TLS method?
+   //EAP-TLS authentication method?
    if(context->selectedMethod == EAP_METHOD_TYPE_TLS)
    {
       //Create a response message
@@ -268,7 +298,7 @@ void eapBuildIdentity(SupplicantContext *context)
    response->identifier = context->reqId;
    response->type = EAP_METHOD_TYPE_IDENTITY;
 
-   //Retrieve the length of the user name
+   //Determine the length of the user name
    n = osStrlen(context->username);
    //Copy user name
    osMemcpy(response->data, context->username, n);
@@ -280,8 +310,8 @@ void eapBuildIdentity(SupplicantContext *context)
 
    //Debug message
    TRACE_DEBUG("Sending EAP packet (%" PRIuSIZE " bytes)\r\n", n);
-   //Dump EAP header contents for debugging purpose
-   eapDumpHeader((EapPacket *) response);
+   //Dump EAP packet for debugging purpose
+   eapDumpPacket((EapPacket *) response, n);
 
    //Save the length of the EAP response
    context->eapRespDataLen = n;
@@ -329,8 +359,8 @@ void eapBuildNotify(SupplicantContext *context)
 
    //Debug message
    TRACE_DEBUG("Sending EAP packet (%" PRIuSIZE " bytes)\r\n", n);
-   //Dump EAP header contents for debugging purpose
-   eapDumpHeader((EapPacket *) response);
+   //Dump EAP packet for debugging purpose
+   eapDumpPacket((EapPacket *) response, n);
 
    //Save the length of the EAP response
    context->eapRespDataLen = n;
@@ -364,15 +394,23 @@ void eapBuildNak(SupplicantContext *context)
    n = 0;
 
 #if (EAP_MD5_SUPPORT == ENABLED)
-   //Check whether EAP-MD5 method is acceptable
+   //Check whether MD5-Challenge authentication method is acceptable
    if(osStrlen(context->password) > 0)
    {
       response->data[n++] = EAP_METHOD_TYPE_MD5_CHALLENGE;
    }
 #endif
 
+#if (EAP_MSCHAPV2_SUPPORT == ENABLED)
+   //Check whether MS-CHAP-V2 authentication method is acceptable
+   if(osStrlen(context->password) > 0)
+   {
+      response->data[n++] = EAP_METHOD_TYPE_MSCHAPV2;
+   }
+#endif
+
 #if (EAP_TLS_SUPPORT == ENABLED)
-   //Check whether EAP-TLS method is acceptable
+   //Check whether EAP-TLS authentication method is acceptable
    if(context->tlsInitCallback != NULL)
    {
       response->data[n++] = EAP_METHOD_TYPE_TLS;
@@ -394,8 +432,8 @@ void eapBuildNak(SupplicantContext *context)
 
    //Debug message
    TRACE_DEBUG("Sending EAP packet (%" PRIuSIZE " bytes)\r\n", n);
-   //Dump EAP header contents for debugging purpose
-   eapDumpHeader((EapPacket *) response);
+   //Dump EAP packet for debugging purpose
+   eapDumpPacket((EapPacket *) response, n);
 
    //Save the length of the EAP response
    context->eapRespDataLen = n;
@@ -452,10 +490,22 @@ bool_t eapAllowMethod(SupplicantContext *context, EapMethodType method)
    acceptable = FALSE;
 
 #if (EAP_MD5_SUPPORT == ENABLED)
-   //EAP-MD5 method?
+   //MD5-Challenge authentication method?
    if(method == EAP_METHOD_TYPE_MD5_CHALLENGE)
    {
-      //Check whether EAP-MD5 method is acceptable
+      //Check whether MD5-Challenge authentication method is acceptable
+      if(osStrlen(context->password) > 0)
+      {
+         acceptable = TRUE;
+      }
+   }
+   else
+#endif
+#if (EAP_MSCHAPV2_SUPPORT == ENABLED)
+   //MS-CHAP-V2 authentication method?
+   if(method == EAP_METHOD_TYPE_MSCHAPV2)
+   {
+      //Check whether MS-CHAP-V2 authentication method is acceptable
       if(osStrlen(context->password) > 0)
       {
          acceptable = TRUE;
@@ -464,10 +514,10 @@ bool_t eapAllowMethod(SupplicantContext *context, EapMethodType method)
    else
 #endif
 #if (EAP_TLS_SUPPORT == ENABLED)
-   //EAP-TLS method?
+   //EAP-TLS authentication method?
    if(method == EAP_METHOD_TYPE_TLS)
    {
-      //Check whether EAP-TLS method is acceptable
+      //Check whether EAP-TLS authentication method is acceptable
       if(context->tlsInitCallback != NULL)
       {
          acceptable = TRUE;
