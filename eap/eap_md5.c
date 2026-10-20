@@ -43,7 +43,7 @@
 
 
 /**
- * @brief Check incoming MD5 challenge request
+ * @brief Check incoming EAP-MD5 request
  * @param[in] context Pointer to the 802.1X supplicant context
  * @param[in] request Pointer to the received request
  * @param[in] length Length of the request, in bytes
@@ -66,7 +66,7 @@ error_t eapMd5CheckRequest(SupplicantContext *context,
 
 
 /**
- * @brief Process incoming MD5 challenge request
+ * @brief Process incoming EAP-MD5 request
  * @param[in] context Pointer to the 802.1X supplicant context
  * @param[in] request Pointer to the received request
  * @param[in] length Length of the request, in bytes
@@ -95,7 +95,7 @@ void eapMd5ProcessRequest(SupplicantContext *context,
 
 
 /**
- * @brief Build MD5 challenge response
+ * @brief Build EAP-MD5 response
  * @param[in] context Pointer to the 802.1X supplicant context
  **/
 
@@ -123,8 +123,8 @@ void eapMd5BuildResponse(SupplicantContext *context)
 
    //Debug message
    TRACE_DEBUG("Sending EAP packet (%" PRIuSIZE " bytes)\r\n", n);
-   //Dump EAP header contents for debugging purpose
-   eapDumpHeader((EapPacket *) response);
+   //Dump EAP packet for debugging purpose
+   eapDumpPacket((EapPacket *) response, n);
 
    //Save the length of the EAP response
    context->eapRespDataLen = n;

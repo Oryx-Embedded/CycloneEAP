@@ -133,8 +133,8 @@ void authenticatorTxCannedFail(AuthenticatorPort *port)
    TRACE_DEBUG("Port %" PRIu8 ": Sending EAP packet (%" PRIuSIZE " bytes)...\r\n",
       port->portIndex, n);
 
-   //Dump EAP header contents for debugging purpose
-   eapDumpHeader(packet);
+   //Dump EAP packet for debugging purpose
+   eapDumpPacket(packet, n);
 
    //Total length of the EAPOL packet
    n += sizeof(EapolPdu);
@@ -195,8 +195,8 @@ void authenticatorTxCannedSuccess(AuthenticatorPort *port)
    TRACE_DEBUG("Port %" PRIu8 ": Sending EAP packet (%" PRIuSIZE " bytes)...\r\n",
       port->portIndex, n);
 
-   //Dump EAP header contents for debugging purpose
-   eapDumpHeader(packet);
+   //Dump EAP packet for debugging purpose
+   eapDumpPacket(packet, n);
 
    //Total length of the EAPOL packet
    n += sizeof(EapolPdu);

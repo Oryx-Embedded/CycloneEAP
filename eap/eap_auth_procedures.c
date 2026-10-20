@@ -146,8 +146,8 @@ void eapBuildSuccess(AuthenticatorPort *port)
    TRACE_DEBUG("Port %" PRIu8 ": Sending EAP packet (%" PRIuSIZE " bytes)...\r\n",
       port->portIndex, n);
 
-   //Dump EAP header contents for debugging purpose
-   eapDumpHeader(packet);
+   //Dump EAP packet for debugging purpose
+   eapDumpPacket(packet, n);
 
    //Save the length of the EAP packet
    port->eapReqDataLen = n;
@@ -182,8 +182,8 @@ void eapBuildFailure(AuthenticatorPort *port)
    TRACE_DEBUG("Port %" PRIu8 ": Sending EAP packet (%" PRIuSIZE " bytes)...\r\n",
       port->portIndex, n);
 
-   //Dump EAP header contents for debugging purpose
-   eapDumpHeader(packet);
+   //Dump EAP packet for debugging purpose
+   eapDumpPacket(packet, n);
 
    //Save the length of the EAP packet
    port->eapReqDataLen = n;
@@ -425,8 +425,8 @@ void eapBuildReq(AuthenticatorPort *port)
       TRACE_DEBUG("Port %" PRIu8 ": Sending EAP packet (%" PRIuSIZE " bytes)...\r\n",
          port->portIndex, n);
 
-      //Dump EAP header contents for debugging purpose
-      eapDumpHeader((EapPacket *) request);
+      //Dump EAP packet for debugging purpose
+      eapDumpPacket((EapPacket *) request, n);
 
       //Save the length of the EAP request
       port->eapReqDataLen = n;

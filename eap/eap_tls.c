@@ -302,8 +302,8 @@ void eapTlsBuildResponse(SupplicantContext *context)
 
    //Debug message
    TRACE_DEBUG("Sending EAP packet (%" PRIuSIZE " bytes)\r\n", n);
-   //Dump EAP header contents for debugging purpose
-   eapDumpHeader((EapPacket *) response);
+   //Dump EAP packet for debugging purpose
+   eapDumpPacket((EapPacket *) response, n);
 
    //Save the length of the EAP response
    context->eapRespDataLen = n;

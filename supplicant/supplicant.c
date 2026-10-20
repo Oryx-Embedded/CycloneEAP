@@ -59,6 +59,12 @@ void supplicantGetDefaultSettings(SupplicantSettings *settings)
    //Port index
    settings->portIndex = 0;
 
+#if (EAP_MSCHAPV2_SUPPORT == ENABLED)
+   //Pseudo-random number generator
+   settings->prngAlgo = NULL;
+   settings->prngContext = NULL;
+#endif
+
 #if (EAP_TLS_SUPPORT == ENABLED)
    //TLS negotiation initialization callback function
    settings->tlsInitCallback = NULL;
@@ -120,6 +126,16 @@ error_t supplicantInit(SupplicantContext *context,
    context->backendStateChangeCallback = settings->backendStateChangeCallback;
    context->eapPeerStateChangeCallback = settings->eapPeerStateChangeCallback;
    context->tickCallback = settings->tickCallback;
+
+#if (EAP_MSCHAPV2_SUPPORT == ENABLED)
+   //Verify that the PRNG is properly set
+   if(settings->prngAlgo == NULL || settings->prngContext == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Pseudo-random number generator
+   context->prngAlgo = settings->prngAlgo;
+   context->prngContext = settings->prngContext;
+#endif
 
 #if (EAP_TLS_SUPPORT == ENABLED)
    //TLS negotiation initialization callback function
@@ -214,7 +230,7 @@ error_t supplicantSetUsername(SupplicantContext *context,
 error_t supplicantSetPassword(SupplicantContext *context,
    const char_t *password)
 {
-#if (EAP_MD5_SUPPORT == ENABLED)
+#if (EAP_MD5_SUPPORT == ENABLED || EAP_MSCHAPV2_SUPPORT == ENABLED)
    //Check parameters
    if(context == NULL || password == NULL)
       return ERROR_INVALID_PARAMETER;
@@ -229,7 +245,7 @@ error_t supplicantSetPassword(SupplicantContext *context,
    //Successful processing
    return NO_ERROR;
 #else
-   //EAP-MD5 challenge is not implemented
+   //Not implemented
    return ERROR_NOT_IMPLEMENTED;
 #endif
 }

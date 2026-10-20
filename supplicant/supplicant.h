@@ -194,6 +194,10 @@ typedef struct
    OsTaskParameters task;                                           ///<Task parameters
    NetInterface *interface;                                         ///<Underlying network interface
    uint_t portIndex;                                                ///<Port index
+#if (EAP_MSCHAPV2_SUPPORT == ENABLED)
+   const PrngAlgo *prngAlgo;                                        ///<Pseudo-random number generator to be used
+   void *prngContext;                                               ///<Pseudo-random number generator context
+#endif
 #if (EAP_TLS_SUPPORT == ENABLED)
    SupplicantTlsInitCallback tlsInitCallback;                       ///<TLS negotiation initialization callback function
    SupplicantTlsCompleteCallback tlsCompleteCallback;               ///<TLS negotiation completion callback function
@@ -222,9 +226,20 @@ struct _SupplicantContext
    uint_t portIndex;                                 ///<Port index
    Socket *socket;                                   ///<Underlying socket
    char_t username[SUPPLICANT_MAX_USERNAME_LEN + 1]; ///<User name
-#if (EAP_MD5_SUPPORT == ENABLED)
+#if (EAP_MD5_SUPPORT == ENABLED || EAP_MSCHAPV2_SUPPORT == ENABLED)
    char_t password[SUPPLICANT_MAX_PASSWORD_LEN + 1]; ///<Password
+#endif
+#if (EAP_MD5_SUPPORT == ENABLED)
    uint8_t digest[MD5_DIGEST_SIZE];                  ///<Calculated hash value
+#endif
+#if (EAP_MSCHAPV2_SUPPORT == ENABLED)
+   const PrngAlgo *prngAlgo;                         ///<Pseudo-random number generator to be used
+   void *prngContext;                                ///<Pseudo-random number generator context
+   uint8_t opcode;                                   ///<Type of EAP MS-CHAP-V2 packet
+   uint8_t mschapv2Id;                               ///<MS-CHAPv2-ID field value
+   uint8_t peerChallenge[16];                        ///<Peer challenge
+   uint8_t authChallenge[16];                        ///<Authenticator challenge
+   uint8_t ntResponse[24];                           ///<NT-Response
 #endif
 #if (EAP_TLS_SUPPORT == ENABLED)
    TlsContext *tlsContext;                           ///<TLS context

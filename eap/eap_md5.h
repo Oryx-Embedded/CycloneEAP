@@ -40,36 +40,6 @@
 extern "C" {
 #endif
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma pack
-#elif defined(__CWCC__) || defined(_WIN32)
-   #pragma pack(push, 1)
-#endif
-
-
-/**
- * @brief EAP-MD5 packet
- **/
-
-typedef __packed_struct
-{
-   uint8_t code;       //0
-   uint8_t identifier; //1
-   uint16_t length;    //2-3
-   uint8_t type;       //4
-   uint8_t valueSize;  //5
-   uint8_t value[];    //6
-} EapMd5Packet;
-
-
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma unpack
-#elif defined(__CWCC__) || defined(_WIN32)
-   #pragma pack(pop)
-#endif
-
 //EAP-MD5 related functions
 error_t eapMd5CheckRequest(SupplicantContext *context,
    const EapMd5Packet *request, size_t length);

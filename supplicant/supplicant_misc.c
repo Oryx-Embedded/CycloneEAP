@@ -399,8 +399,8 @@ void supplicantProcessEapPacket(SupplicantContext *context,
 
    //Debug message
    TRACE_DEBUG("EAP packet received (%" PRIuSIZE " bytes)\r\n", length);
-   //Dump EAP header contents for debugging purpose
-   eapDumpHeader(packet);
+   //Dump EAP packet for debugging purpose
+   eapDumpPacket(packet, length);
 
    //The Length field is two octets and indicates the length, in octets, of the
    //EAP packet including the Code, Identifier, Length, and Data fields

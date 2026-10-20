@@ -477,8 +477,8 @@ void radiusDumpString(const uint8_t *data, size_t length)
 {
    size_t i;
 
-   //Append prefix
-   TRACE_DEBUG("    ");
+   //Display prefix
+   TRACE_DEBUG("    \"");
 
    //Dump attribute value
    for(i = 0; i < length; i++)
@@ -486,8 +486,8 @@ void radiusDumpString(const uint8_t *data, size_t length)
       TRACE_DEBUG("%c", data[i]);
    }
 
-   //Add a line feed
-   TRACE_DEBUG("\r\n");
+   //Display suffix
+   TRACE_DEBUG("\"\r\n");
 }
 
 

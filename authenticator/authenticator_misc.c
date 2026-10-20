@@ -489,8 +489,8 @@ void authenticatorProcessEapPacket(AuthenticatorPort *port,
    TRACE_DEBUG("Port %" PRIu8 ": EAP packet received (%" PRIuSIZE " bytes)...\r\n",
       port->portIndex, length);
 
-   //Dump EAP header contents for debugging purpose
-   eapDumpHeader(packet);
+   //Dump EAP packet for debugging purpose
+   eapDumpPacket(packet, length);
 
    //The Length field is two octets and indicates the length, in octets, of the
    //EAP packet including the Code, Identifier, Length, and Data fields
@@ -1083,8 +1083,8 @@ void authenticatorProcessRadiusPacket(AuthenticatorContext *context)
       TRACE_DEBUG("Port %" PRIu8 ": Sending EAP packet (%" PRIuSIZE " bytes)...\r\n",
          port->portIndex, port->aaaEapReqDataLen);
 
-      //Dump EAP header contents for debugging purpose
-      eapDumpHeader(eapPacket);
+      //Dump EAP packet for debugging purpose
+      eapDumpPacket(eapPacket, port->aaaEapReqDataLen);
 
       //When the authenticator has finished processing the message, it sets one
       //of the signals aaaEapReq, aaaSuccess, and aaaFail
