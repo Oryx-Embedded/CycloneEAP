@@ -284,7 +284,9 @@ error_t authenticatorSetServerKey(AuthenticatorContext *context,
    //Acquire exclusive access to the 802.1X authenticator context
    osAcquireMutex(&context->mutex);
 
-   //Copy key
+   //Erase the existing key, if any
+   cryptoZeroizeMem(context->password, AUTHENTICATOR_MAX_SERVER_KEY_LEN);
+   //Copy the new key
    osMemcpy(context->serverKey, key, keyLen);
    //Save the length of the key
    context->serverKeyLen = keyLen;
@@ -1162,7 +1164,7 @@ void authenticatorDeinit(AuthenticatorContext *context)
       osDeleteEvent(&context->event);
 
       //Clear authenticator context
-      osMemset(context, 0, sizeof(AuthenticatorContext));
+      cryptoZeroizeMem(context, sizeof(AuthenticatorContext));
    }
 }
 

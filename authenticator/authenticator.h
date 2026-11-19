@@ -472,7 +472,7 @@ struct _AuthenticatorContext
    AuthenticatorTickCallback tickCallback;              ///<Tick callback function
    systime_t timestamp;                                 ///<Timestamp to manage timeout
 
-   uint_t radiusId;                                     ///<RADIUS packet identifier
+   uint8_t radiusId;                                    ///<RADIUS packet identifier
    bool_t busy;                                         ///<Busy flag
 
    uint8_t txBuffer[AUTHENTICATOR_TX_BUFFER_SIZE];      ///<Transmission buffer

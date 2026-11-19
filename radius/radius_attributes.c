@@ -118,7 +118,7 @@ const RadiusAttribute *radiusGetAttribute(const RadiusPacket *packet,
 
          //Malformed attribute?
          if(attribute->length < sizeof(RadiusAttribute) ||
-            attribute->length > n)
+            attribute->length > (n - i))
          {
             return NULL;
          }

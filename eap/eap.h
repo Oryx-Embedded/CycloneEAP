@@ -35,6 +35,7 @@
 #include "eap_config.h"
 #include "core/net.h"
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 
 
 /*

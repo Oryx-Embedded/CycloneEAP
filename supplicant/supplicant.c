@@ -176,6 +176,14 @@ error_t supplicantInit(SupplicantContext *context,
          break;
       }
 
+#if (EAP_TLS_SUPPORT == ENABLED)
+      //Initialize TLS session state
+      error = tlsInitSessionState(&context->tlsSession);
+      //Any error to report?
+      if(error)
+         break;
+#endif
+
       //Successful initialization
       error = NO_ERROR;
 
@@ -239,7 +247,9 @@ error_t supplicantSetPassword(SupplicantContext *context,
    if(osStrlen(password) > SUPPLICANT_MAX_PASSWORD_LEN)
       return ERROR_INVALID_LENGTH;
 
-   //Save password
+   //Erase the existing password, if any
+   cryptoZeroizeMem(context->password, SUPPLICANT_MAX_PASSWORD_LEN);
+   //Save the new password
    osStrcpy(context->password, password);
 
    //Successful processing
@@ -735,8 +745,13 @@ void supplicantDeinit(SupplicantContext *context)
       osDeleteMutex(&context->mutex);
       osDeleteEvent(&context->event);
 
+#if (EAP_TLS_SUPPORT == ENABLED)
+      //Release TLS session state
+      tlsFreeSessionState(&context->tlsSession);
+#endif
+
       //Clear supplicant context
-      osMemset(context, 0, sizeof(SupplicantContext));
+      cryptoZeroizeMem(context, sizeof(SupplicantContext));
    }
 }
 

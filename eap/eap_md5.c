@@ -84,6 +84,7 @@ void eapMd5ProcessRequest(SupplicantContext *context,
    md5Update(&md5Context, context->password, osStrlen(context->password));
    md5Update(&md5Context, request->value, request->valueSize);
    md5Final(&md5Context, context->digest);
+   md5Deinit(&md5Context);
 
    //The method never continues at this point
    context->methodState = EAP_METHOD_STATE_DONE;

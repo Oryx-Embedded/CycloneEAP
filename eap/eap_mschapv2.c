@@ -394,6 +394,9 @@ void eapMschapv2GenerateNtResponse(const uint8_t *authChallenge,
 
    //Compute ChallengeResponse(Challenge, PasswordHash)
    eapMschapv2ChallengeResponse(challenge, passwordHash, response);
+
+   //Erase working state
+   cryptoZeroizeMem(passwordHash, sizeof(passwordHash));
 }
 
 
@@ -417,9 +420,10 @@ void eapMschapv2ChallengeHash(const uint8_t *peerChallenge,
    sha1Update(&sha1Context, authChallenge, 16);
    sha1Update(&sha1Context, username, osStrlen(username));
    sha1Final(&sha1Context, digest);
+   sha1Deinit(&sha1Context);
 
    //Return the first 8 bytes of the SHA-1 digest
-   memcpy(challenge, digest, 8);
+   osMemcpy(challenge, digest, 8);
 }
 
 
@@ -456,6 +460,7 @@ void eapMschapv2NtPasswordHash(const char_t *password, uint8_t *passwordHash)
 
    //Finalize MD4 computation
    md4Final(&md4Context, passwordHash);
+   md4Deinit(&md4Context);
 }
 
 
@@ -475,6 +480,7 @@ void eapMschapv2HashNtPasswordHash(const uint8_t *passwordHash,
    md4Init(&md4Context);
    md4Update(&md4Context, passwordHash, 16);
    md4Final(&md4Context, passwordHashHash);
+   md4Deinit(&md4Context);
 }
 
 
@@ -511,6 +517,11 @@ void eapMschapv2ChallengeResponse(const uint8_t *challenge,
    desComputeKeyParity(zPasswordHash + 14, key);
    desInit(&desContext, key, 8);
    desEncryptBlock(&desContext, challenge, response + 16);
+   desDeinit(&desContext);
+
+   //Erase working state
+   cryptoZeroizeMem(zPasswordHash, sizeof(zPasswordHash));
+   cryptoZeroizeMem(key, sizeof(key));
 }
 
 
@@ -548,6 +559,7 @@ void eapMschapv2GenerateAuthResponse(const char_t *password,
    sha1Update(&sha1Context, ntResponse, 24);
    sha1Update(&sha1Context, magic1, 39);
    sha1Final(&sha1Context, digest);
+   sha1Deinit(&sha1Context);
 
    //Compute ChallengeHash(PeerChallenge, AuthenticatorChallenge, UserName)
    eapMschapv2ChallengeHash(peerChallenge, authChallenge, username, challenge);
@@ -558,6 +570,7 @@ void eapMschapv2GenerateAuthResponse(const char_t *password,
    sha1Update(&sha1Context, challenge, 8);
    sha1Update(&sha1Context, magic2, 41);
    sha1Final(&sha1Context, digest);
+   sha1Deinit(&sha1Context);
 
    //Encode the value of Digest as "S=" followed by the auth_string
    authResponse[0] = 'S';
@@ -573,6 +586,11 @@ void eapMschapv2GenerateAuthResponse(const char_t *password,
       //Then convert lower nibble
       authResponse[i * 2 + 3] = hexDigit[digest[i] & 0x0F];
    }
+
+   //Erase working state
+   cryptoZeroizeMem(passwordHash, sizeof(passwordHash));
+   cryptoZeroizeMem(passwordHashHash, sizeof(passwordHashHash));
+   cryptoZeroizeMem(digest, sizeof(digest));
 }
 
 
@@ -609,6 +627,9 @@ bool_t eapMschapv2CheckAuthResponse(const char_t *password,
    {
       valid = FALSE;
    }
+
+   //Erase working state
+   cryptoZeroizeMem(calcResponse, sizeof(calcResponse));
 
    //Return TRUE if the authenticator response is correct
    return valid;

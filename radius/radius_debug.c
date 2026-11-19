@@ -287,7 +287,7 @@ void radiusDumpPacket(const RadiusPacket *packet, size_t length)
 
          //Malformed attribute?
          if(attribute->length < sizeof(RadiusAttribute) ||
-            attribute->length > length)
+            attribute->length > (length - i))
          {
             break;
          }
